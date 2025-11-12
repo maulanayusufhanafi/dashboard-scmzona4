@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Stok SCM - Versi Fix</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f5f6fa;
+            color: #2f3640;
+        }
+        header {
+            background-color: #273c75;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input[type="text"], input[type="file"], button {
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #0097e6;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #40739e;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #dcdde1;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .success { background-color: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📦 Dashboard Stok SCM (Versi Fix)</h1>
+    </header>
+    <div class="container">
+        <p><strong>Upload File Excel:</strong></p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div id="msg" class="message" style="display:none"></div>
+        <hr>
+        <form id="searchForm">
+            <input type="text" id="searchInput" placeholder="Masukkan nomor KIMAP (contoh: 103298012900)" required>
+            <button type="submit">Cari</button>
+        </form>
+        <div id="resultContainer"></div>
+    </div>
+
+    <script>
+        let stockData = [];
+
+        function showMsg(text, type="success") {
+            const msg = document.getElementById("msg");
+            msg.className = "message " + type;
+            msg.textContent = text;
+            msg.style.display = "block";
+            setTimeout(() => msg.style.display = "none", 4000);
+        }
+
+        // Baca Excel
+        document.getElementById("fileInput").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+                stockData = json.map(row => ({
+                    plant: row["Plant"] || row["PLANT"] || row["plant"],
+                    material: String(row["Material"] || row["MATERIAL"] || row["material"]).trim(),
+                    description: row["Description"] || row["DESCRIPTION"] || row["description"],
+                    storageLocation: row["Storage Location"] || row["STORAGE LOCATION"] || row["storageLocation"],
+                    storageDesc: row["Storage Description"] || row["STORAGE DESCRIPTION"] || row["storageDesc"],
+                    stock: parseFloat(row["Stock"] || row["STOCK"] || row["stock"] || 0),
+                    unit: row["Unit"] || row["UNIT"] || "PCS",
+                    value: parseFloat(row["Value"] || row["VALUE"] || row["value"] || 0)
+                }));
+
+                localStorage.setItem("scmStockData", JSON.stringify(stockData));
+                showMsg(`✅ ${stockData.length} data berhasil dimuat & disimpan.`, "success");
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // Cari data berdasarkan KIMAP
+        document.getElementById("searchForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const term = document.getElementById("searchInput").value.trim().toLowerCase();
+            if (!term) return;
+
+            // Ambil dari localStorage jika kosong
+            if (stockData.length === 0) {
+                const saved = localStorage.getItem("scmStockData");
+                if (saved) stockData = JSON.parse(saved);
+            }
+
+            const results = stockData.filter(item => (item.material || "").toLowerCase().includes(term));
+            displayResults(results);
+        });
+
+        function formatRupiah(num) {
+            return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById("resultContainer");
+            if (results.length === 0) {
+                container.innerHTML = "<p style='color:red'>❌ Material tidak ditemukan.</p>";
+                return;
+            }
+
+            let html = `<h3>${results[0].description}</h3><p>KIMAP: ${results[0].material}</p>`;
+            html += `<table><tr><th>Lokasi SCM</th><th>Plant</th><th>Storage Loc</th><th>Stok</th><th>Harga Satuan</th><th>Total Nilai</th></tr>`;
+            let totalStock = 0, totalValue = 0;
+
+            results.forEach(item => {
+                const unitPrice = item.stock > 0 ? item.value / item.stock : 0;
+                html += `<tr>
+                    <td>${item.storageDesc || "-"}</td>
+                    <td>${item.plant || "-"}</td>
+                    <td>${item.storageLocation || "-"}</td>
+                    <td>${item.stock.toLocaleString()} ${item.unit}</td>
+                    <td>${formatRupiah(unitPrice)}</td>
+                    <td>${formatRupiah(item.value)}</td>
+                </tr>`;
+                totalStock += item.stock;
+                totalValue += item.value;
+            });
+
+            html += `</table><p><strong>Total Stok:</strong> ${totalStock.toLocaleString()} | <strong>Total Nilai:</strong> ${formatRupiah(totalValue)}</p>`;
+            container.innerHTML = html;
+        }
+
+        // Load data tersimpan saat halaman dibuka
+        document.addEventListener("DOMContentLoaded", () => {
+            const saved = localStorage.getItem("scmStockData");
+            if (saved) {
+                stockData = JSON.parse(saved);
+                showMsg(`📂 ${stockData.length} data berhasil dimuat dari localStorage.`, "success");
+            }
+        });
+    </script>
+</body>
+</html>
