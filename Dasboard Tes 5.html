@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Stok SCM</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            font-size: 28px;
+        }
+        
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .date-display {
+            background-color: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .date-display:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .upload-btn, .export-btn, .online-update-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-btn:hover, .export-btn:hover, .online-update-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .export-btn {
+            background-color: #27ae60;
+        }
+        
+        .export-btn:hover {
+            background-color: #219653;
+        }
+        
+        .online-update-btn {
+            background-color: #9b59b6;
+        }
+        
+        .online-update-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .search-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .search-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .search-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .results-section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .results-header {
+            background-color: #34495e;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .material-info {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .material-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .material-code {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .stock-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .stock-table th {
+            background-color: #ecf0f1;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .stock-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stock-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .stock-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .no-results {
+            padding: 40px 20px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+        
+        .unit-price {
+            font-weight: 600;
+            color: #27ae60;
+        }
+        
+        .stock-qty {
+            font-weight: 600;
+        }
+        
+        .total-value {
+            font-weight: 600;
+            color: #e74c3c;
+        }
+        
+        .summary-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 30px;
+        }
+        
+        .summary-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-card h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .summary-card p {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+        
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-area:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .upload-area p {
+            margin-top: 10px;
+            color: #7f8c8d;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+        }
+        
+        .upload-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .cancel-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .confirm-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .data-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .data-info p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .date-edit-form {
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .date-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .edit-date-btn {
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .edit-date-btn:hover {
+            background-color: #e67e22;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: calc(100% - 30px);
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .search-container {
+            position: relative;
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .date-nav {
+                flex-wrap: wrap;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>Dashboard Stok SCM</h1>
+                <div class="date-nav">
+                    <div class="date-display" id="dateDisplay">Data per: -</div>
+                    <button class="edit-date-btn" id="editDateBtn">Edit Tanggal</button>
+                    <button class="online-update-btn" id="onlineUpdateBtn">Update Data Online</button>
+                    <button class="upload-btn" id="uploadBtn">Update Data Excel</button>
+                    <button class="export-btn" id="exportBtn">Ekspor Data</button>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls">
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <section class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Masukkan nomor KIMAP (contoh: H840200219, 103298012900, B050300009, dll)" required>
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+                <button type="submit" class="search-btn">Cari Stok</button>
+            </form>
+        </section>
+        
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Memproses data...</p>
+        </div>
+        
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h2>Hasil Pencarian</h2>
+                <span id="resultCount">0 item ditemukan</span>
+            </div>
+            
+            <div class="filter-section" id="filterSection" style="display: none;">
+                <label for="plantFilter">Filter Plant:</label>
+                <select id="plantFilter" class="filter-select">
+                    <option value="">Semua Plant</option>
+                </select>
+                
+                <label for="locationFilter">Filter Lokasi:</label>
+                <select id="locationFilter" class="filter-select">
+                    <option value="">Semua Lokasi</option>
+                </select>
+            </div>
+            
+            <div class="material-info">
+                <div class="material-name" id="materialName">-</div>
+                <div class="material-code" id="materialCode">KIMAP: -</div>
+            </div>
+            
+            <div class="table-container">
+                <table class="stock-table">
+                    <thead>
+                        <tr>
+                            <th>Lokasi SCM</th>
+                            <th>Plant</th>
+                            <th>Storage Location</th>
+                            <th>Stok</th>
+                            <th>Harga Satuan</th>
+                            <th>Total Nilai</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <section class="summary-section" id="summarySection" style="display: none;">
+            <div class="summary-title">Ringkasan Stok</div>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>Total Stok</h3>
+                    <p id="totalStock">0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Nilai</h3>
+                    <p id="totalValue">Rp 0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Jumlah Lokasi</h3>
+                    <p id="locationCount">0</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Rata-rata Harga</h3>
+                    <p id="avgPrice">Rp 0</p>
+                </div>
+            </div>
+        </section>
+        
+        <div class="no-results" id="noResults" style="display: none;">
+            <p>Material dengan nomor KIMAP tersebut tidak ditemukan.</p>
+        </div>
+    </div>
+    
+    <!-- Modal untuk upload file -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Update Data dari Excel</div>
+                <button class="close-btn" id="closeUploadModal">&times;</button>
+            </div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p>Klik untuk memilih file Excel atau tarik file ke sini</p>
+            </div>
+            <div class="data-info" id="dataInfo" style="display: none;">
+                <p><strong>File:</strong> <span id="fileName">-</span></p>
+                <p><strong>Jumlah Data:</strong> <span id="dataCount">0</span> baris</p>
+                <p><strong>Tanggal Data:</strong> <span id="dataDate">-</span></p>
+            </div>
+            <div class="upload-actions">
+                <button class="cancel-btn" id="cancelUpload">Batal</button>
+                <button class="confirm-btn" id="confirmUpload" disabled>Update Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal untuk update data online -->
+    <div class="modal" id="onlineUpdateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Update Data dari Sumber Online</div>
+                <button class="close-btn" id="closeOnlineUpdateModal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="onlineDataUrl">URL Data Online:</label>
+                <input type="url" id="onlineDataUrl" class="search-input" 
+                       placeholder="https://example.com/data-stok.json"
+                       value="https://raw.githubusercontent.com/fake-scmi-data/stock-data/main/scm-stock-data.json">
+                <small style="color: #7f8c8d; display: block; margin-top: 5px;">
+                    Masukkan URL yang mengarah ke data JSON stok SCM
+                </small>
+            </div>
+            <div class="data-info" id="onlineDataInfo" style="display: none;">
+                <p><strong>Sumber:</strong> <span id="onlineSource">-</span></p>
+                <p><strong>Jumlah Data:</strong> <span id="onlineDataCount">0</span> baris</p>
+                <p><strong>Tanggal Data:</strong> <span id="onlineDataDate">-</span></p>
+            </div>
+            <div class="upload-actions">
+                <button class="cancel-btn" id="cancelOnlineUpdate">Batal</button>
+                <button class="confirm-btn" id="confirmOnlineUpdate">Update Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal untuk edit tanggal -->
+    <div class="modal" id="dateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit Tanggal Data</div>
+                <button class="close-btn" id="closeDateModal">&times;</button>
+            </div>
+            <div class="date-edit-form">
+                <div class="form-group">
+                    <label for="dateInput">Tanggal Data:</label>
+                    <input type="date" id="dateInput" class="date-input">
+                </div>
+                <div class="form-group">
+                    <label for="dateDisplayText">Tampilan Tanggal:</label>
+                    <input type="text" id="dateDisplayText" placeholder="Contoh: 11 November 2025">
+                </div>
+            </div>
+            <div class="date-actions">
+                <button class="cancel-btn" id="cancelDateEdit">Batal</button>
+                <button class="confirm-btn" id="confirmDateEdit">Simpan Tanggal</button>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>Dashboard Stok SCM - Data diperbarui: <span id="footerDate">-</span></p>
+        </div>
+    </footer>
+
+    <script>
+        // Data stok dari file Excel atau sumber online
+        let stockData = [];
+        let currentFileName = "";
+        let currentDataDate = "";
+        let currentDisplayDate = "";
+        let filteredResults = [];
+        let allMaterials = [];
+        
+        // URL default untuk data online (contoh)
+        const DEFAULT_ONLINE_DATA_URL = "https://raw.githubusercontent.com/fake-scmi-data/stock-data/main/scm-stock-data.json";
+        
+        // Fungsi untuk menampilkan pesan error
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Sembunyikan setelah 5 detik
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Fungsi untuk menampilkan pesan sukses
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            
+            // Sembunyikan setelah 3 detik
+            setTimeout(() => {
+                successElement.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Fungsi untuk memformat angka ke format Rupiah
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+        
+        // Fungsi untuk mencari material berdasarkan KIMAP dengan berbagai variasi
+        function searchMaterial(kimap) {
+            if (!kimap || kimap.trim() === '') return [];
+            
+            const searchTerm = kimap.trim().toLowerCase();
+            
+            // Filter data berdasarkan KIMAP dengan berbagai kemungkinan pencocokan
+            const results = stockData.filter(item => {
+                if (!item.material) return false;
+                
+                const materialCode = item.material.toString().toLowerCase();
+                
+                // Pencocokan eksak
+                if (materialCode === searchTerm) return true;
+                
+                // Pencocokan parsial
+                if (materialCode.includes(searchTerm)) return true;
+                
+                // Pencocokan tanpa spasi/tanda baca
+                const cleanMaterial = materialCode.replace(/[^a-z0-9]/g, '');
+                const cleanSearch = searchTerm.replace(/[^a-z0-9]/g, '');
+                if (cleanMaterial.includes(cleanSearch)) return true;
+                
+                return false;
+            });
+            
+            return results;
+        }
+        
+        // Fungsi untuk mengekstrak semua kode material untuk autosuggest
+        function extractAllMaterials() {
+            const materials = [...new Set(stockData.map(item => item.material).filter(Boolean))];
+            return materials.sort();
+        }
+        
+        // Fungsi untuk menampilkan suggestions
+        function showSuggestions(searchTerm) {
+            const suggestionsContainer = document.getElementById('searchSuggestions');
+            suggestionsContainer.innerHTML = '';
+            
+            if (!searchTerm || searchTerm.length < 2) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            const filtered = allMaterials.filter(material => 
+                material.toLowerCase().includes(searchTerm.toLowerCase())
+            ).slice(0, 10); // Batasi hingga 10 suggestions
+            
+            if (filtered.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            filtered.forEach(material => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = material;
+                div.addEventListener('click', () => {
+                    document.getElementById('searchInput').value = material;
+                    suggestionsContainer.style.display = 'none';
+                    document.getElementById('searchForm').dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+                suggestionsContainer.appendChild(div);
+            });
+            
+            suggestionsContainer.style.display = 'block';
+        }
+        
+        // Fungsi untuk mengisi filter dropdown
+        function populateFilters(results) {
+            const plantFilter = document.getElementById('plantFilter');
+            const locationFilter = document.getElementById('locationFilter');
+            
+            // Reset filter
+            plantFilter.innerHTML = '<option value="">Semua Plant</option>';
+            locationFilter.innerHTML = '<option value="">Semua Lokasi</option>';
+            
+            // Kumpulkan nilai unik untuk plant dan lokasi
+            const plants = [...new Set(results.map(item => item.plant))].filter(Boolean);
+            const locations = [...new Set(results.map(item => item.storageDesc))].filter(Boolean);
+            
+            // Isi dropdown plant
+            plants.forEach(plant => {
+                const option = document.createElement('option');
+                option.value = plant;
+                option.textContent = plant;
+                plantFilter.appendChild(option);
+            });
+            
+            // Isi dropdown lokasi
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                option.textContent = location;
+                locationFilter.appendChild(option);
+            });
+        }
+        
+        // Fungsi untuk memfilter hasil berdasarkan kriteria
+        function filterResults(results, plant, location) {
+            let filtered = [...results];
+            
+            if (plant) {
+                filtered = filtered.filter(item => item.plant === plant);
+            }
+            
+            if (location) {
+                filtered = filtered.filter(item => item.storageDesc === location);
+            }
+            
+            return filtered;
+        }
+        
+        // Fungsi untuk menampilkan hasil pencarian
+        function displayResults(results) {
+            const resultsSection = document.getElementById('resultsSection');
+            const noResults = document.getElementById('noResults');
+            const summarySection = document.getElementById('summarySection');
+            const filterSection = document.getElementById('filterSection');
+            
+            if (results.length === 0) {
+                resultsSection.style.display = 'none';
+                summarySection.style.display = 'none';
+                filterSection.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            // Tampilkan section hasil
+            resultsSection.style.display = 'block';
+            noResults.style.display = 'none';
+            summarySection.style.display = 'block';
+            
+            // Tampilkan filter jika ada lebih dari 1 hasil
+            if (results.length > 1) {
+                filterSection.style.display = 'flex';
+                populateFilters(results);
+            } else {
+                filterSection.style.display = 'none';
+            }
+            
+            // Update informasi material
+            document.getElementById('materialName').textContent = results[0].description || '-';
+            document.getElementById('materialCode').textContent = `KIMAP: ${results[0].material}`;
+            document.getElementById('resultCount').textContent = `${results.length} lokasi ditemukan`;
+            
+            // Simpan hasil untuk filtering
+            filteredResults = [...results];
+            
+            // Isi tabel stok dengan hasil yang tidak difilter
+            updateTable(results);
+            
+            // Update ringkasan
+            updateSummary(results);
+        }
+        
+        // Fungsi untuk memperbarui tabel dengan data
+        function updateTable(results) {
+            const tableBody = document.getElementById('stockTableBody');
+            tableBody.innerHTML = '';
+            
+            results.forEach(item => {
+                const unitPrice = item.stock > 0 ? item.value / item.stock : 0;
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${item.storageDesc || '-'}</td>
+                    <td>${item.plant || '-'}</td>
+                    <td>${item.storageLocation || '-'}</td>
+                    <td class="stock-qty">${(item.stock || 0).toLocaleString()} ${item.unit || 'PCS'}</td>
+                    <td class="unit-price">${formatRupiah(unitPrice)}</td>
+                    <td class="total-value">${formatRupiah(item.value || 0)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Fungsi untuk memperbarui ringkasan
+        function updateSummary(results) {
+            let totalStock = 0;
+            let totalValue = 0;
+            
+            results.forEach(item => {
+                totalStock += item.stock || 0;
+                totalValue += item.value || 0;
+            });
+            
+            // Update ringkasan
+            document.getElementById('totalStock').textContent = totalStock.toLocaleString();
+            document.getElementById('totalValue').textContent = formatRupiah(totalValue);
+            document.getElementById('locationCount').textContent = results.length;
+            document.getElementById('avgPrice').textContent = formatRupiah(totalStock > 0 ? totalValue / totalStock : 0);
+        }
+        
+        // Fungsi untuk memvalidasi struktur data Excel
+        function validateExcelStructure(jsonData) {
+            if (!jsonData || jsonData.length < 2) {
+                return { isValid: false, message: "File Excel tidak berisi data yang valid" };
+            }
+            
+            // Cek header (baris pertama)
+            const headers = jsonData[0];
+            const requiredHeaders = ["Plant", "Material", "Description", "Storage Location", "Storage Description", "Stock", "Unit", "Value"];
+            
+            for (let i = 0; i < requiredHeaders.length; i++) {
+                if (!headers.includes(requiredHeaders[i])) {
+                    return { 
+                        isValid: false, 
+                        message: `Kolom '${requiredHeaders[i]}' tidak ditemukan dalam file Excel` 
+                    };
+                }
+            }
+            
+            return { isValid: true };
+        }
+        
+        // Fungsi untuk memproses file Excel
+        function processExcelFile(file) {
+            showLoading(true);
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Ambil sheet pertama
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Konversi ke JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Validasi struktur file
+                    const validation = validateExcelStructure(jsonData);
+                    if (!validation.isValid) {
+                        showError(validation.message);
+                        showLoading(false);
+                        return;
+                    }
+                    
+                    // Proses data
+                    stockData = [];
+                    
+                    // Lewati header (baris pertama)
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row.length >= 8) {
+                            stockData.push({
+                                plant: row[0] || '',
+                                material: row[1] ? row[1].toString() : '',
+                                description: row[2] || '',
+                                storageLocation: row[3] || '',
+                                storageDesc: row[4] || '',
+                                stock: parseFloat(row[5]) || 0,
+                                unit: row[6] || 'PCS',
+                                value: parseFloat(row[7]) || 0
+                            });
+                        }
+                    }
+                    
+                    // Update informasi file
+                    currentFileName = file.name;
+                    
+                    // Update daftar material untuk autosuggest
+                    allMaterials = extractAllMaterials();
+                    
+                    // Update UI dengan informasi file
+                    document.getElementById('fileName').textContent = currentFileName;
+                    document.getElementById('dataCount').textContent = stockData.length;
+                    document.getElementById('dataDate').textContent = currentDisplayDate || currentDataDate;
+                    document.getElementById('dataInfo').style.display = 'block';
+                    
+                    // Aktifkan tombol konfirmasi
+                    document.getElementById('confirmUpload').disabled = false;
+                    
+                    showSuccess(`File berhasil diproses. ${stockData.length} baris data ditemukan.`);
+                } catch (error) {
+                    console.error("Error processing Excel file:", error);
+                    showError("Terjadi kesalahan saat memproses file Excel: " + error.message);
+                } finally {
+                    showLoading(false);
+                }
+            };
+            
+            reader.onerror = function() {
+                showError("Terjadi kesalahan saat membaca file");
+                showLoading(false);
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        // Fungsi untuk mengambil data dari sumber online
+        async function fetchOnlineData(url) {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Validasi struktur data JSON
+                if (!Array.isArray(data)) {
+                    throw new Error("Data online harus berupa array");
+                }
+                
+                if (data.length === 0) {
+                    throw new Error("Data online kosong");
+                }
+                
+                // Pastikan setiap item memiliki field yang diperlukan
+                const validatedData = data.map(item => ({
+                    plant: item.plant || '',
+                    material: item.material ? item.material.toString() : '',
+                    description: item.description || '',
+                    storageLocation: item.storageLocation || '',
+                    storageDesc: item.storageDesc || item.storageDescription || '',
+                    stock: parseFloat(item.stock) || 0,
+                    unit: item.unit || 'PCS',
+                    value: parseFloat(item.value) || 0
+                }));
+                
+                stockData = validatedData;
+                currentFileName = "Data Online";
+                
+                // Update daftar material untuk autosuggest
+                allMaterials = extractAllMaterials();
+                
+                // Update UI
+                document.getElementById('onlineSource').textContent = url;
+                document.getElementById('onlineDataCount').textContent = stockData.length;
+                document.getElementById('onlineDataDate').textContent = currentDisplayDate || currentDataDate;
+                document.getElementById('onlineDataInfo').style.display = 'block';
+                
+                showSuccess(`Data online berhasil diambil. ${stockData.length} baris data ditemukan.`);
+                
+                return true;
+            } catch (error) {
+                console.error("Error fetching online data:", error);
+                showError("Gagal mengambil data online: " + error.message);
+                return false;
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Fungsi untuk menampilkan/menyembunyikan loading indicator
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+        
+        // Fungsi untuk menyimpan data ke localStorage
+        function saveDataToStorage() {
+            const dataToSave = {
+                stockData: stockData,
+                fileName: currentFileName,
+                dataDate: currentDataDate,
+                displayDate: currentDisplayDate,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            localStorage.setItem('scmStockData', JSON.stringify(dataToSave));
+        }
+        
+        // Fungsi untuk memuat data dari localStorage
+        function loadDataFromStorage() {
+            const savedData = localStorage.getItem('scmStockData');
+            
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    stockData = parsedData.stockData || [];
+                    currentFileName = parsedData.fileName || '';
+                    currentDataDate = parsedData.dataDate || '';
+                    currentDisplayDate = parsedData.displayDate || '';
+                    
+                    // Update daftar material untuk autosuggest
+                    allMaterials = extractAllMaterials();
+                    
+                    // Update UI dengan informasi data yang dimuat
+                    updateDataDisplay();
+                    
+                    if (stockData.length > 0) {
+                        showSuccess(`Data berhasil dimuat dari penyimpanan lokal. ${stockData.length} baris data tersedia.`);
+                    }
+                } catch (error) {
+                    console.error("Error loading data from storage:", error);
+                    // Jika terjadi error, gunakan data contoh
+                    loadSampleData();
+                }
+            } else {
+                // Jika tidak ada data yang disimpan, gunakan data contoh
+                loadSampleData();
+            }
+        }
+        
+        // Fungsi untuk memperbarui tampilan data
+        function updateDataDisplay() {
+            const displayText = currentDisplayDate || currentDataDate;
+            document.getElementById('dateDisplay').textContent = `Data per: ${displayText}`;
+            document.getElementById('footerDate').textContent = displayText;
+        }
+        
+        // Fungsi untuk memuat data contoh dengan H840200219
+        function loadSampleData() {
+            stockData = [
+                {
+                    material: "H840200219",
+                    description: "BIT ROCK 12 1/4 IADC 437 TYPE TOOTH",
+                    plant: "W105",
+                    storageLocation: "ST01",
+                    storageDesc: "F PRABUMULIH (T)",
+                    stock: 15,
+                    value: 2850000000,
+                    unit: "PCS"
+                },
+                {
+                    material: "H840200219",
+                    description: "BIT ROCK 12 1/4 IADC 437 TYPE TOOTH",
+                    plant: "W106",
+                    storageLocation: "ST01",
+                    storageDesc: "F PENDOPO (T)",
+                    stock: 8,
+                    value: 1520000000,
+                    unit: "PCS"
+                },
+                {
+                    material: "103298012900",
+                    description: "PCKR,MSG,7,20TO26,L80,5K,275,2-7/8,EU",
+                    plant: "W105",
+                    storageLocation: "ST01",
+                    storageDesc: "F PRABUMULIH (T)",
+                    stock: 37,
+                    value: 3523214000,
+                    unit: "SET"
+                },
+                {
+                    material: "103298021900",
+                    description: "PCKR,MDG,7,20TO26,L80,5K,275,3-1/2,EU",
+                    plant: "W105",
+                    storageLocation: "ST01",
+                    storageDesc: "F PRABUMULIH (T)",
+                    stock: 6,
+                    value: 750510000,
+                    unit: "SET"
+                },
+                {
+                    material: "B050300009",
+                    description: "BIT, ROCK, 26 IN, IADC 111, TYPE TOOTH",
+                    plant: "W105",
+                    storageLocation: "ST01",
+                    storageDesc: "F PRABUMULIH (T)",
+                    stock: 15,
+                    value: 4006408567,
+                    unit: "PCS"
+                },
+                {
+                    material: "B050300009",
+                    description: "BIT, ROCK, 26 IN, IADC 111, TYPE TOOTH",
+                    plant: "W106",
+                    storageLocation: "ST01",
+                    storageDesc: "F PENDOPO (T)",
+                    stock: 1,
+                    value: 269395948,
+                    unit: "PCS"
+                }
+            ];
+            
+            currentFileName = "Data Contoh";
+            currentDataDate = new Date().toISOString().split('T')[0];
+            currentDisplayDate = new Date().toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            // Update daftar material untuk autosuggest
+            allMaterials = extractAllMaterials();
+            
+            updateDataDisplay();
+        }
+        
+        // Fungsi untuk mengekspor data ke Excel
+        function exportToExcel() {
+            if (stockData.length === 0) {
+                showError("Tidak ada data untuk diekspor");
+                return;
+            }
+            
+            try {
+                // Buat worksheet dari data
+                const ws = XLSX.utils.json_to_sheet(stockData);
+                
+                // Buat workbook dan tambahkan worksheet
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Stok SCM");
+                
+                // Ekspor ke file Excel
+                const fileName = `Stok_SCM_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                showSuccess(`Data berhasil diekspor ke ${fileName}`);
+            } catch (error) {
+                console.error("Error exporting data:", error);
+                showError("Terjadi kesalahan saat mengekspor data: " + error.message);
+            }
+        }
+        
+        // Event listener untuk form pencarian
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            
+            if (searchTerm) {
+                const results = searchMaterial(searchTerm);
+                displayResults(results);
+                
+                // Sembunyikan suggestions setelah pencarian
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
+        
+        // Event listener untuk input pencarian (autosuggest)
+        document.getElementById('searchInput').addEventListener('input', function() {
+            showSuggestions(this.value);
+        });
+        
+        // Event listener untuk klik di luar suggestions
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
+        
+        // Event listener untuk filter plant
+        document.getElementById('plantFilter').addEventListener('change', function() {
+            const plant = this.value;
+            const location = document.getElementById('locationFilter').value;
+            const filtered = filterResults(filteredResults, plant, location);
+            updateTable(filtered);
+            updateSummary(filtered);
+            document.getElementById('resultCount').textContent = `${filtered.length} lokasi ditemukan`;
+        });
+        
+        // Event listener untuk filter lokasi
+        document.getElementById('locationFilter').addEventListener('change', function() {
+            const location = this.value;
+            const plant = document.getElementById('plantFilter').value;
+            const filtered = filterResults(filteredResults, plant, location);
+            updateTable(filtered);
+            updateSummary(filtered);
+            document.getElementById('resultCount').textContent = `${filtered.length} lokasi ditemukan`;
+        });
+        
+        // Event listener untuk tombol upload
+        document.getElementById('uploadBtn').addEventListener('click', function() {
+            document.getElementById('uploadModal').style.display = 'flex';
+        });
+        
+        // Event listener untuk tombol update online
+        document.getElementById('onlineUpdateBtn').addEventListener('click', function() {
+            document.getElementById('onlineDataUrl').value = DEFAULT_ONLINE_DATA_URL;
+            document.getElementById('onlineUpdateModal').style.display = 'flex';
+        });
+        
+        // Event listener untuk tombol ekspor
+        document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+        
+        // Event listener untuk tombol edit tanggal
+        document.getElementById('editDateBtn').addEventListener('click', function() {
+            // Isi form dengan tanggal saat ini
+            document.getElementById('dateInput').value = currentDataDate;
+            document.getElementById('dateDisplayText').value = currentDisplayDate;
+            document.getElementById('dateModal').style.display = 'flex';
+        });
+        
+        // Event listener untuk klik pada tanggal display
+        document.getElementById('dateDisplay').addEventListener('click', function() {
+            document.getElementById('editDateBtn').click();
+        });
+        
+        // Event listener untuk tombol close modal upload
+        document.getElementById('closeUploadModal').addEventListener('click', function() {
+            document.getElementById('uploadModal').style.display = 'none';
+        });
+        
+        // Event listener untuk tombol close modal online update
+        document.getElementById('closeOnlineUpdateModal').addEventListener('click', function() {
+            document.getElementById('onlineUpdateModal').style.display = 'none';
+        });
+        
+        // Event listener untuk tombol close modal tanggal
+        document.getElementById('closeDateModal').addEventListener('click', function() {
+            document.getElementById('dateModal').style.display = 'none';
+        });
+        
+        // Event listener untuk tombol batal upload
+        document.getElementById('cancelUpload').addEventListener('click', function() {
+            document.getElementById('uploadModal').style.display = 'none';
+        });
+        
+        // Event listener untuk tombol batal update online
+        document.getElementById('cancelOnlineUpdate').addEventListener('click', function() {
+            document.getElementById('onlineUpdateModal').style.display = 'none';
+        });
+        
+        // Event listener untuk tombol batal edit tanggal
+        document.getElementById('cancelDateEdit').addEventListener('click', function() {
+            document.getElementById('dateModal').style.display = 'none';
+        });
+        
+        // Event listener untuk area upload
+        document.getElementById('uploadArea').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+        
+        // Event listener untuk drag & drop
+        document.getElementById('uploadArea').addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = '#f0f8ff';
+        });
+        
+        document.getElementById('uploadArea').addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+        });
+        
+        document.getElementById('uploadArea').addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                    processExcelFile(file);
+                } else {
+                    showError('Silakan unggah file Excel (.xlsx atau .xls)');
+                }
+            }
+        });
+        
+        // Event listener untuk input file
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files.length) {
+                const file = e.target.files[0];
+                processExcelFile(file);
+            }
+        });
+        
+        // Event listener untuk tombol konfirmasi upload
+        document.getElementById('confirmUpload').addEventListener('click', function() {
+            // Update tanggal data dengan tanggal saat ini jika belum diatur
+            if (!currentDataDate) {
+                currentDataDate = new Date().toISOString().split('T')[0];
+            }
+            if (!currentDisplayDate) {
+                currentDisplayDate = new Date().toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+            
+            // Update UI dengan data baru
+            updateDataDisplay();
+            
+            // Simpan data ke localStorage
+            saveDataToStorage();
+            
+            // Tutup modal
+            document.getElementById('uploadModal').style.display = 'none';
+            
+            // Reset form upload
+            document.getElementById('fileInput').value = '';
+            document.getElementById('dataInfo').style.display = 'none';
+            document.getElementById('confirmUpload').disabled = true;
+            
+            // Tampilkan notifikasi
+            showSuccess(`Data berhasil diperbarui! ${stockData.length} baris data telah dimuat.`);
+        });
+        
+        // Event listener untuk tombol konfirmasi update online
+        document.getElementById('confirmOnlineUpdate').addEventListener('click', async function() {
+            const url = document.getElementById('onlineDataUrl').value.trim();
+            
+            if (!url) {
+                showError('URL data online harus diisi');
+                return;
+            }
+            
+            const success = await fetchOnlineData(url);
+            
+            if (success) {
+                // Update tanggal data dengan tanggal saat ini jika belum diatur
+                if (!currentDataDate) {
+                    currentDataDate = new Date().toISOString().split('T')[0];
+                }
+                if (!currentDisplayDate) {
+                    currentDisplayDate = new Date().toLocaleDateString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                }
+                
+                // Update UI dengan data baru
+                updateDataDisplay();
+                
+                // Simpan data ke localStorage
+                saveDataToStorage();
+                
+                // Tutup modal
+                document.getElementById('onlineUpdateModal').style.display = 'none';
+            }
+        });
+        
+        // Event listener untuk tombol konfirmasi edit tanggal
+        document.getElementById('confirmDateEdit').addEventListener('click', function() {
+            const dateInput = document.getElementById('dateInput').value;
+            const displayText = document.getElementById('dateDisplayText').value;
+            
+            if (dateInput) {
+                currentDataDate = dateInput;
+            }
+            
+            if (displayText) {
+                currentDisplayDate = displayText;
+            } else if (dateInput) {
+                // Format tanggal jika tidak ada teks tampilan
+                const dateObj = new Date(dateInput);
+                currentDisplayDate = dateObj.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+            
+            // Update tampilan
+            updateDataDisplay();
+            
+            // Simpan ke localStorage
+            saveDataToStorage();
+            
+            // Tutup modal
+            document.getElementById('dateModal').style.display = 'none';
+            
+            // Tampilkan notifikasi
+            showSuccess('Tanggal berhasil diperbarui!');
+        });
+        
+        // Inisialisasi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromStorage();
+            
+            // Coba load data online secara otomatis jika tidak ada data
+            if (stockData.length === 0) {
+                setTimeout(() => {
+                    showSuccess("Mencoba memuat data online...");
+                    fetchOnlineData(DEFAULT_ONLINE_DATA_URL);
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
